@@ -14,7 +14,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const links = [
-    { label: "Products", href: "/products" },
+    { label: "Products", href: "/products-page" },
     { label: "New In", href: "/new-in" },
     { label: "Sales", href: "/sales" },
   ];

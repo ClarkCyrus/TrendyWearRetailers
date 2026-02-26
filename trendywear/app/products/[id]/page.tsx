@@ -1,33 +1,151 @@
 "use client";
 
-import { products } from "@/app/data/products";
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Breadcrumb from "@/app/components/Breadcrumb";
 import ProductCard from "@/app/components/ProductCard";
-import { reviews } from "@/app/data/reviews";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/utils/supabase/client";
+
+const BUCKET_NAME = "images";
+
+// ---- Types ----
+type Product = {
+    id: number;
+    name: string;
+    images: string[];
+    oldPrice?: number;
+    price: number;
+    rating: number;
+    reviews: number;
+    colors: string[];
+    description: string[];
+    features: string[];
+};
+
+type Review = {
+    id: number;
+    productId: number;
+    name: string;
+    avatar: string;
+    comment: string;
+    date: string;
+    likes: number;
+};
 
 export default function ProductPage() {
     const params = useParams();
     const id = Number(params.id);
 
-    const product = products.find((p) => p.id === id);
+    const [product, setProduct] = useState<Product | null>(null);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [productReviews, setProductReviews] = useState<Review[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const productReviews = reviews.filter(
-        (review) => review.productId === product?.id
-    );
+    useEffect(() => {
+        async function fetchData() {
+            const supabase = createClient();
+
+            // Fetch all items
+            const { data: items, error } = await supabase
+                .from("items")
+                .select("id, name, image_id, description, tags");
+
+            if (error || !items) {
+                console.error("Error fetching items:", error);
+                setLoading(false);
+                return;
+            }
+
+            // Fetch all prices
+            const itemIds = items.map((i) => i.id);
+            const { data: prices } = await supabase
+                .from("prices")
+                .select("item_id, price")
+                .in("item_id", itemIds);
+
+            const priceMap: Record<number, number> = {};
+            if (prices) {
+                for (const p of prices) {
+                    if (!(p.item_id in priceMap)) priceMap[p.item_id] = p.price;
+                }
+            }
+
+            // Map items to Product shape
+            const mapped: Product[] = items.map((item) => {
+                const imageUrls = (item.image_id ?? []).map(
+                    (imgId: string) =>
+                        supabase.storage.from(BUCKET_NAME).getPublicUrl(imgId).data.publicUrl
+                );
+                return {
+                    id: item.id,
+                    name: item.name ?? "Unnamed",
+                    images: imageUrls.length > 0 ? imageUrls : ["/placeholder.jpg"],
+                    price: priceMap[item.id] ?? 0,
+                    rating: 0,       // not in DB yet
+                    reviews: 0,      // not in DB yet
+                    colors: [],      // not in DB yet
+                    description: item.description ? [item.description] : [],
+                    features: [],    // not in DB yet
+                };
+            });
+
+            setProducts(mapped);
+
+            // Find current product
+            const current = mapped.find((p) => p.id === id) ?? null;
+            setProduct(current);
+
+            // Fetch reviews for this product
+            if (current) {
+                const { data: reviewRows } = await supabase
+                    .from("reviews")
+                    .select("id, user_id, item_id, rating, text, created_at")
+                    .eq("item_id", id);
+
+                // Fetch usernames
+                const userIds = [...new Set((reviewRows ?? []).map((r) => r.user_id))];
+                const { data: users } = userIds.length > 0
+                    ? await supabase
+                        .from("users")
+                        .select("id, username")
+                        .in("id", userIds)
+                    : { data: [] };
+
+                const usernameMap: Record<string, string> = {};
+                if (users) {
+                    for (const u of users) usernameMap[u.id] = u.username;
+                }
+
+                const mappedReviews: Review[] = (reviewRows ?? []).map((r) => ({
+                    id: r.id,
+                    productId: r.item_id,
+                    name: usernameMap[r.user_id] ?? "Anonymous",
+                    avatar: "/avatar.jpg",   // not in DB yet
+                    comment: r.text ?? "",
+                    date: new Date(r.created_at).toLocaleDateString("en-US", {
+                        year: "numeric", month: "short", day: "numeric",
+                    }),
+                    likes: 0,               // not in DB yet
+                }));
+
+                setProductReviews(mappedReviews);
+            }
+
+            setLoading(false);
+        }
+
+        fetchData();
+    }, [id]);
 
     const [sortBy, setSortBy] = useState("Newest");
     const [likedReviews, setLikedReviews] = useState<number[]>([]);
 
     const toggleLike = (id: number) => {
         setLikedReviews((prev) =>
-            prev.includes(id)
-                ? prev.filter((r) => r !== id)
-                : [...prev, id]
+            prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
         );
     };
 
@@ -38,18 +156,15 @@ export default function ProductPage() {
         return 0;
     });
 
-
     const [showMore, setShowMore] = useState(false);
     const [activeTab, setActiveTab] = useState("details");
     const [selectedSize, setSelectedSize] = useState("XS");
-    const [selectedColor, setSelectedColor] = useState(
-        product?.colors[0] || "#000"
-    );
+    const [selectedColor, setSelectedColor] = useState("#000");
 
     const [showMoreReviews, setShowMoreReviews] = useState(false);
     const reviewsRef = useRef<HTMLDivElement>(null);
     const [reviewsHeight, setReviewsHeight] = useState(0);
-    const collapsedHeightReviews = 390; // adjust as needed
+    const collapsedHeightReviews = 390;
 
     useEffect(() => {
         if (reviewsRef.current) {
@@ -57,7 +172,6 @@ export default function ProductPage() {
         }
     }, [sortedReviews]);
 
-    // Ref & state for dynamic content height
     const contentRef = useRef<HTMLDivElement>(null);
     const [contentHeight, setContentHeight] = useState(0);
     const collapsedHeight = 220;
@@ -68,11 +182,8 @@ export default function ProductPage() {
         }
     }, [product?.description, product?.features]);
 
-    if (!product) {
-        return <div className="p-10">Product not found</div>;
-    }
-
-
+    if (loading) return <div className="p-10">Loading...</div>;
+    if (!product) return <div className="p-10">Product not found</div>;
 
     return (
         <>
@@ -412,11 +523,6 @@ export default function ProductPage() {
                                 </div>
                             </>
                         )}
-
-
-
-
-
                     </div>
 
                     {/* YOU MIGHT LIKE */}

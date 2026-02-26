@@ -1,22 +1,92 @@
 "use client";
 
-import Breadcrumb from "../components/Breadcrumb";
-import { useState } from "react";
+import Breadcrumb from "@/app/components/Breadcrumb";
+import { useState, useEffect } from "react";
 import { Search, ChevronRight } from "lucide-react";
-import ProductCard from "../components/ProductCard";
-import { products } from "../data/products";
+import ProductCard from "@/app/components/ProductCard";
 import Link from "next/link";
+import { createClient } from "@/utils/supabase/client";
+
+type Product = {
+    id: number;
+    name: string;
+    images: string[];
+    oldPrice?: number;
+    price: number;
+    rating: number;
+    reviews: number;
+    colors: string[];
+};
+
+const BUCKET_NAME = "images";
 
 export default function Page() {
     const [selectedSize, setSelectedSize] = useState("XS");
     const [activeCategory, setActiveCategory] = useState("Best Sellers");
     const [searchQuery, setSearchQuery] = useState("");
     const [activePage, setActivePage] = useState(1);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
 
     const totalPages = 4;
 
     const categories = ["Polo Shirts", "Jackets", "Shirts", "Best Sellers"];
     const filters = ["Category", "Colors", "Price Range", "Fit", "Length", "Ratings"];
+
+    useEffect(() => {
+        async function fetchProducts() {
+            const supabase = createClient();
+
+            const { data: items, error } = await supabase
+                .from("items")
+                .select("id, name, image_id");
+
+            if (error || !items) {
+                console.error("Error fetching items:", error);
+                setLoading(false);
+                return;
+            }
+
+            const itemIds = items.map((i) => i.id);
+            const now = new Date().toISOString();
+
+            const { data: prices } = await supabase
+                .from("prices")
+                .select("item_id, price")
+                .in("item_id", itemIds)
+                .lte("valid_from", now)
+                .or(`valid_to.is.null,valid_to.gte.${now}`)
+                .order("priority", { ascending: false });
+
+            const priceMap: Record<number, number> = {};
+            if (prices) {
+                for (const p of prices) {
+                    if (!(p.item_id in priceMap)) priceMap[p.item_id] = p.price;
+                }
+            }
+
+            const mapped = items.map((item) => {
+                const imageUrls = (item.image_id ?? []).map(
+                    (imgId: string) =>
+                        supabase.storage.from(BUCKET_NAME).getPublicUrl(imgId).data.publicUrl
+                );
+                return {
+                    id: item.id,
+                    name: item.name ?? "Unnamed",
+                    images: imageUrls.length > 0 ? imageUrls : ["/placeholder.jpg"],
+                    price: priceMap[item.id] ?? 0,
+                    rating: 0,
+                    reviews: 0,
+                    colors: [],
+                };
+            });
+
+            setProducts(mapped);
+            setLoading(false);
+        }
+
+        fetchProducts();
+    }, []);
 
     return (
         <div className="min-h-screen bg-[#F8F9FB]">
@@ -130,9 +200,13 @@ export default function Page() {
 
                         {/* PRODUCTS GRID */}
                         <div className="grid grid-cols-4 gap-10">
-                            {products.map((product) => (
-                                <ProductCard key={product.id} {...product} />
-                            ))}
+                            {loading ? (
+                                <p className="text-gray-400 text-sm col-span-4">Loading products...</p>
+                            ) : (
+                                products.map((product) => (
+                                    <ProductCard key={product.id} {...product} />
+                                ))
+                            )}
                         </div>
 
                         {/* PAGINATION */}

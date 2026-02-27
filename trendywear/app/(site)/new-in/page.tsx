@@ -1,9 +1,9 @@
 "use client";
 
-import Breadcrumb from "@/app/components/Breadcrumb";
+import Breadcrumb from "@/app/(site)/components/Breadcrumb";
 import { useState, useEffect } from "react";
 import { Search, ChevronRight } from "lucide-react";
-import ProductCard from "@/app/components/ProductCard";
+import ProductCard from "@/app/(site)/components/ProductCard";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 

@@ -3,8 +3,8 @@
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import { useParams } from "next/navigation";
-import Breadcrumb from "@/app/components/Breadcrumb";
-import ProductCard from "@/app/components/ProductCard";
+import Breadcrumb from "@/app/(site)/components/Breadcrumb";
+import ProductCard from "@/app/(site)/components/ProductCard";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
@@ -182,8 +182,20 @@ export default function ProductPage() {
         }
     }, [product?.description, product?.features]);
 
-    if (loading) return <div className="p-10">Loading...</div>;
-    if (!product) return <div className="p-10">Product not found</div>;
+    if (loading)
+    return (
+        <div className="bg-[#F8F9FB] min-h-screen flex justify-center items-center">
+        {/* Spinner */}
+        <div className="w-16 h-16 border-4 border-gray-300 border-t-[#C1121F] rounded-full animate-spin" />
+        </div>
+    );
+
+    if (!product) 
+    return (
+        <div className="bg-[#F8F9FB] min-h-screen flex justify-center items-center">
+        <p className="text-gray-500 text-lg">Product not found</p>
+        </div>
+    )   
 
     return (
         <>

@@ -5,6 +5,8 @@ import Image from "next/image";
 import { MdArrowOutward, MdFavoriteBorder } from "react-icons/md";
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { useRouter } from 'next/navigation';
+
 
 const BUCKET_NAME = "images";
 
@@ -17,6 +19,7 @@ type MensProduct = {
 
 export default function MensWear() {
   const [mensWearData, setMensWearData] = useState<MensProduct[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchMensWear() {
@@ -91,6 +94,8 @@ export default function MensWear() {
                 <div 
                   key={item.id} 
                   className="shrink-0 w-[280px] sm:w-[300px] group cursor-pointer"
+                  onClick={() => router.push(`/products/${item.id}`)} 
+
                 >
                   <div className="aspect-[3.5/4] rounded-3xl overflow-hidden mb-5 relative transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-black/20">
                     

@@ -85,7 +85,7 @@ export default function MensWear() {
       <div className="max-w-7xl mx-auto w-full pr-4 md:pr-0 relative">
       <div className="relative flex flex-col lg:flex-row gap-8 lg:gap-12 w-full lg:w-[calc(100%+10rem)] lg:-ml-[10rem] box-border lg:min-h-[400px]">        
         {/* LEFT PANEL */}
-        <div className="flex-1 min-w-0 flex relative justify-end order-2 lg-order-1">
+        <div className="flex-1 min-w-0 flex relative justify-end order-2 lg:order-1">
           {/* SCROLL CONTAINER */}
           <div className="flex items-center gap-6 px-6 py-8 overflow-x-auto hide-scrollbar scroll-smooth fade-edge-right">
               {loading ? (
@@ -136,7 +136,7 @@ export default function MensWear() {
         </div>
 
         {/* RIGHT SIDE: Text Content */}
-        <div className="w-full lg:w-[400px] pl-8 lg:pl-0 flex flex-col justify-between lg:items-end lg:text-right order-1 lg:order-2 shrink-0 sm:min-h-[460px] order-1 lg-order-2">
+        <div className="w-full lg:w-[400px] pl-8 lg:pl-0 flex flex-col justify-between lg:items-end lg:text-right shrink-0 lg:min-h-[460px] order-1 lg:order-2">
           <div className="space-y-4 pt-4">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-wide text-[#003049]">
               Men&apos;s Wear

@@ -74,7 +74,7 @@ export default function WomensWearScroll() {
   }, []);
 
   return (
-    <section className="w-full py-2 sm:py-10 pl-0 sd:pl-8 bg-[#f8f9fa] overflow-x-hidden">
+    <section className="w-full py-2 sm:py-10 bg-[#f8f9fa] overflow-x-hidden">
         <div className="max-w-7xl mx-auto w-full px-0 md:px-2">
 
         <div className="bg-[#b91c1c] w-[calc(100%+4rem)] lg:w-[calc(100%+10rem)] rounded-l-[15px] flex flex-col lg:flex-row overflow-hidden relative min-h-[600px] py-8">

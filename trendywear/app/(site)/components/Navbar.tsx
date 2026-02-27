@@ -48,7 +48,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 flex items-center">
 
         {/* Left Links */}
-        <div className="hidden md:flex flex-1 justify-evenly text-[#003049] font-medium text-lg">
+        <div className="hidden lg:flex flex-1 justify-evenly text-[#003049] font-medium text-lg">
           {links.map((link, idx) => (
             <Link key={idx} href={link.href} className={getLinkStyle(link.href)}>
               {link.label}
@@ -57,14 +57,14 @@ export default function Navbar() {
         </div>
 
         {/* Logo */}
-        <div className="flex-shrink-0 md:px-16 px-2 text-center">
+        <div className="flex-shrink-0 lg:px-16 px-2 text-center">
           <Link href="/" className="text-2xl font-bold text-[#C1121F] uppercase">
             Trendy Wear
           </Link>
         </div>
 
         {/* Right Icons / Hamburger */}
-        <div className="flex-1 hidden md:flex justify-evenly items-center">
+        <div className="flex-1 hidden lg:flex justify-evenly items-center">
           {icons.map((item, idx) => (
             <button key={idx} className={iconStyle} aria-label={item.label}>
               {item.icon}
@@ -73,7 +73,7 @@ export default function Navbar() {
         </div>
 
         {/* Hamburger (Mobile Only) */}
-        <div className="flex md:hidden ml-auto">
+        <div className="flex lg:hidden ml-auto">
           <button
             className="p-2 text-[#003049] hover:bg-[#003049]/10 rounded transition"
             onClick={() => setMenuOpen(!menuOpen)}

@@ -31,7 +31,7 @@ export default function Collections() {
           return (
             <div
               key={item.id}
-              className={`${mtClass} w-1/2 sm:w-1/2 md:w-1/3 lg:w-1/5 px-3 mb-6 flex-shrink-0`}
+              className={`${mtClass} w-1/2 sm:w-1/2 md:w-1/4 lg:w-1/5 px-3 mb-6 flex-shrink-0`}
             >
               <div className="aspect-[3/4] rounded-2xl transition duration-300 cursor-pointer relative group overflow-hidden">
                 <Image

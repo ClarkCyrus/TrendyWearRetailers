@@ -33,7 +33,7 @@ export default function Favorites() {
     <div className="min-h-screen bg-[#F8F9FB] flex flex-col items-center">
       
       {/* OUTER WRAPPER: Matches your Cart page (max-w-7xl / 1280px) */}
-      <div className="w-full max-w-7xl flex flex-col min-h-screen px-10">
+      <div className="w-full max-w-7xl flex flex-col min-h-screen px-8">
         
         {/* HEADER: Spans the full 1280px width */}
         <header className="py-10">

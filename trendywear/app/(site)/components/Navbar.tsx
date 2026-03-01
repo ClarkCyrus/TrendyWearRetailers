@@ -22,6 +22,8 @@ export default function Navbar() {
   const router = useRouter();
   const { user, setUser} = useUser();
   const supabase = createClient();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const links = [
     { label: "Products", href: "/products-page" },
@@ -48,6 +50,15 @@ export default function Navbar() {
     }
     
     return `${base} text-[#003049] border-transparent hover:border-[#003049] hover:bg-[#003049]/5 ${isIcon ? 'p-2' : 'px-6 py-2 font-medium'}`;
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/products-page?search=${encodeURIComponent(searchQuery)}`);
+      setIsSearchOpen(false);
+      setSearchQuery("");
+    }
   };
 
   const AccountDropdown = ({ label }: { label?: string }) => {
@@ -94,6 +105,44 @@ export default function Navbar() {
 
   return (
     <nav className="w-full bg-[#f8f9fa] border-b border-gray-300">
+      
+     {/* Backdrop */}
+      {isSearchOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-[90] animate-in fade-in duration-300" 
+          onClick={() => setIsSearchOpen(false)} 
+        />
+      )}
+
+      {/* Search Bar */}
+      <div className={`
+        fixed top-0 left-0 w-full bg-white shadow-2xl z-[100] transition-all duration-300 ease-in-out
+        ${isSearchOpen ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'}
+      `}>
+        <div className="max-w-7xl mx-auto px-6 py-8 flex items-center gap-6">
+          <form onSubmit={handleSearchSubmit} className="flex-1 flex items-center border-b-2 border-[#003049] py-2">
+            <MdOutlineSearch size={30} className="text-[#003049] mr-4" />
+            <input
+              autoFocus={isSearchOpen}
+              type="text"
+              placeholder="Search for products..."
+              className="bg-transparent border-none outline-none text-2xl w-full text-[#003049] placeholder:text-gray-400 font-light"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </form>
+
+          <button 
+            type="button"
+            onClick={() => setIsSearchOpen(false)}
+            className="p-2 text-[#003049] hover:bg-gray-100 rounded-full transition-all flex flex-col items-center"
+          >
+            <HiOutlineX size={32} />
+            <span className="text-[10px] uppercase font-bold">Close</span>
+          </button>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 flex items-center">
 
         {/* Left Links */}
@@ -124,7 +173,9 @@ export default function Navbar() {
                   key={idx}
                   className={iconStyle}
                   onClick={() => {
-                    if (restricted.includes(item.label) && !user) {
+                    if (item.label === "Search") {
+                      setIsSearchOpen(true);
+                    } else if (restricted.includes(item.label) && !user) {
                       router.push("/login"); 
                     } else if (item.href && item.label !== "Search") {
                       router.push(item.href); 

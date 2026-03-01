@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { 
   MdAdd, 
@@ -29,16 +29,16 @@ export default function ShoppingCart() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center">
+    <div className="min-h-screen bg-[#F8F9FB] flex flex-col items-center">
       
       {/* Main Container - Shared Width for Cart and Checkout */}
       <div className="w-full max-w-7xl flex flex-col min-h-screen">
         
         {/* Scrollable Cart Section */}
-        <div className="flex-grow p-6 md:p-12 lg:px-8">
+        <div className="flex-grow p-6 md:p-10 lg:px-8">
           <div className="flex justify-between items-end border-b-1 border-black pb-4">
             <div>
-              <Link href="/" className="flex items-center gap-2 text-gray-400 hover:text-black transition-colors mb-4 uppercase text-[10px] font-black tracking-[0.3em]">
+              <Link href="/" className="flex items-center gap-2 text-gray-400 hover:text-black transition-colors mb-6 uppercase text-[10px] font-black tracking-[0.3em]">
                 <MdKeyboardBackspace className="text-xl" />
                 Return to Store
               </Link>
@@ -93,7 +93,7 @@ export default function ShoppingCart() {
         </div>
 
         {/* STICKY CHECKOUT - Now strictly constrained to the 7xl width */}
-        <div className="sticky bottom-0 w-full bg-white border-t-1 border-black py-10 px-6 md:px-16 lg:px-8 z-50 shadow-[0_-15px_30px_-15px_rgba(0,0,0,0.05)]">
+        <div className="sticky bottom-0 w-full bg-white border-t-1 border-black py-8 px-6 md:px-16 lg:px-8 z-50 shadow-[0_-15px_30px_-15px_rgba(0,0,0,0.05)]">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             
             <div className="flex flex-col">

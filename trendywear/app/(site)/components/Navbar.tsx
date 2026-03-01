@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter} from 'next/navigation'; 
-
+import { useCart } from '../context/CartContext';
 
 import { 
   MdOutlineSearch, 
@@ -11,6 +11,7 @@ import {
   MdOutlineShoppingCart, 
   MdOutlinePersonOutline,
   MdLogout,
+  MdReceiptLong,
 } from 'react-icons/md';
 import { HiOutlineMenu, HiOutlineX } from 'react-icons/hi';
 import { useUser } from '../context/UserContext';
@@ -20,10 +21,11 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname(); 
   const router = useRouter();
-  const { user, setUser} = useUser();
+  const {user, setUser} = useUser();
   const supabase = createClient();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { cartCount } = useCart();
 
   const links = [
     { label: "Products", href: "/products-page" },
@@ -41,23 +43,27 @@ export default function Navbar() {
   const iconStyle =
     "p-2 rounded-full border border-[#003049] text-[#003049] hover:bg-[#003049]/10 transition flex items-center justify-center";
 
-const getLinkStyle = (href: string, isIcon = false) => {
-  const isActive = pathname === href;
+  const getLinkStyle = (href: string, isIcon = false) => {
+    const isActive = pathname === href;
 
-  if (isIcon) {
-    const iconBase = "flex items-center justify-center rounded-full border border-[#003049] transition-all duration-300 p-2";
-    if (isActive) {
-      return `${iconBase} bg-[#003049] text-white shadow-md scale-105`;
+    if (isIcon) {
+      const iconBase = "flex items-center justify-center rounded-full border border-[#003049] transition-all duration-300 p-2";
+      if (isActive) {
+        return `${iconBase} bg-[#003049] text-white shadow-md scale-105`;
+      }
+      return `${iconBase} bg-transparent text-[#003049] hover:bg-[#003049]/10`;
     }
-    return `${iconBase} bg-transparent text-[#003049] hover:bg-[#003049]/10`;
-  }
 
-  const textBase = "transition-all duration-300 flex items-center justify-center rounded-full px-6 py-2 font-medium border";
-  if (isActive) {
-    return `${textBase} bg-[#003049] text-white border-[#003049] shadow-md`;
-  }
-  return `${textBase} text-[#003049] border-transparent hover:bg-[#003049]/5`;
-};
+    const textBase = "transition-all duration-300 flex items-center justify-center rounded-full px-6 py-2 font-medium border";
+    if (isActive) {
+      return `${textBase} bg-[#003049] text-white border-[#003049] shadow-md`;
+    }
+    return `${textBase} text-[#003049] border-transparent hover:bg-[#003049]/5`;
+  };
+
+  const handleOrders = () => {
+    router.push("/orders"); 
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,9 +102,16 @@ const getLinkStyle = (href: string, isIcon = false) => {
           <>
             <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)}></div>
             <div className="absolute right-0 mt-2 w-36 bg-white border border-gray-200 shadow-xl rounded-lg py-1 z-50">
+              <button
+                onClick={handleOrders}
+                className="w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors"
+              >
+                <MdReceiptLong size={18} />
+                My Orders
+              </button>
               <button 
                 onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 transition-colors"
+                className="w-full flex items-center gap-2 px-5 py-2 text-sm text-red-600 transition-colors"
               >
                 <MdLogout size={18} />
                 Logout
@@ -189,7 +202,26 @@ const getLinkStyle = (href: string, isIcon = false) => {
                     }                   
                   }}
                 >
-                  <span>{item.icon}</span>
+                  <div className="relative">
+                  {item.icon}
+                  {item.label === "Cart" && cartCount > 0 && (
+                    <span
+                      className="
+                        absolute -top-3 -right-4
+                        bg-[#C1121F]
+                        text-white
+                        text-[12px]
+                        font-bold
+                        rounded-full
+                        min-w-[20px]
+                        h-[20px]
+                        flex items-center justify-center
+                      "
+                    >
+                      {cartCount}
+                    </span>
+                    )}
+                  </div>
                 </button>
               );
             })}
@@ -229,14 +261,37 @@ const getLinkStyle = (href: string, isIcon = false) => {
                   key={idx}
                   className="flex items-center space-x-3 p-2 hover:bg-[#003049]/10 rounded transition"
                   onClick={() => {
-                    if (restricted.includes(item.label) && !user) {
+                    if (item.label === "Search") {
+                      setIsSearchOpen(true);
+                      setMenuOpen(false);
+                    } else if (restricted.includes(item.label) && !user) {
                       router.push("/login"); 
                     } else if (item.href && item.label !== "Search") {
                       router.push(item.href); 
                     }                   
                   }}
                 >
-                  <span>{item.icon}</span>
+                  <div className="relative">
+                    {item.icon}
+                    {item.label === "Cart" && cartCount > 0 && (
+                      <span
+                        className="
+                          absolute -top-2 -right-2
+                          bg-[#C1121F]
+                          text-white
+                          text-[10px]
+                          font-bold
+                          rounded-full
+                          min-w-[18px]
+                          h-[18px]
+                          flex items-center justify-center
+                          px-[2px]
+                        "
+                      >
+                        {cartCount}
+                      </span>
+                    )}
+                  </div>
                   <span>{item.label}</span>
                 </button>
               );

@@ -2,10 +2,10 @@
 
 import Breadcrumb from "@/app/(site)/components/Breadcrumb";
 import { useState, useEffect } from "react";
-import { Search, ChevronRight } from "lucide-react";
+import { Search } from "lucide-react";
 import ProductCard from "@/app/(site)/components/ProductCard";
-import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+import FiltersSidebar from "@/app/(site)/components/FilterSidebar";
 
 type Product = {
     id: number;
@@ -28,10 +28,39 @@ export default function Page() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // ✅ sub-category state
+    const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>(
+        []
+    );
+
+    // ✅ toggle function
+    const toggleSubCategory = (value: string) => {
+        setSelectedSubCategories((prev) =>
+            prev.includes(value) ? prev.filter((x) => x !== value) : [...prev, value]
+        );
+    };
+
+    const [selectedColors, setSelectedColors] = useState<string[]>([]);
+    const toggleColor = (value: string) => {
+        setSelectedColors((prev) =>
+            prev.includes(value) ? prev.filter((x) => x !== value) : [...prev, value]
+        );
+    };
+
+    const [price, setPrice] = useState(200);
+
+    const [selectedFits, setSelectedFits] = useState<string[]>([]);
+    const toggleFit = (value: string) => {
+        setSelectedFits((prev) =>
+            prev.includes(value) ? prev.filter((x) => x !== value) : [...prev, value]
+        );
+    };
+
+    const [rating, setRating] = useState(0);
+
     const totalPages = 4;
 
     const categories = ["Polo Shirts", "Jackets", "Shirts", "Best Sellers"];
-    const filters = ["Category", "Colors", "Price Range", "Fit", "Length", "Ratings"];
 
     useEffect(() => {
         async function fetchProducts() {
@@ -92,62 +121,22 @@ export default function Page() {
         <div className="min-h-screen bg-[#F8F9FB]">
             <main className="max-w-[1440px] mx-auto px-10 py-10">
                 <div className="grid grid-cols-[260px_1fr] gap-14 items-start">
-                    {/* FILTERS */}
-                    <aside className="mt-42">
-                        <h2 className="text-[24px] font-semibold mb-8">Filters</h2>
-
-                        {/* SIZE */}
-                        <div className="mb-10">
-                            <p className="text-[22px] font-medium mb-3">Size</p>
-                            <div className="flex gap-2">
-                                {["XS", "S", "M", "L", "XL"].map((size) => {
-                                    const isSelected = size === selectedSize;
-                                    return (
-                                        <button
-                                            key={size}
-                                            onClick={() => setSelectedSize(size)}
-                                            className={`w-9 h-9 rounded-full text-xs border flex items-center justify-center ${isSelected
-                                                ? "bg-[#A52A2A] border-[#A52A2A] text-white"
-                                                : "bg-[#D9D9D9] border-[#D9D9D9] text-black"
-                                                }`}
-                                        >
-                                            {size}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* FILTER LIST */}
-                        <div className="divide-y divide-[#C5C5C5] font-bold">
-                            {filters.map((item, index) => {
-                                const isLast = index === filters.length - 1;
-                                const largeFontItems = [
-                                    "Category",
-                                    "Colors",
-                                    "Price Range",
-                                    "Fit",
-                                    "Length",
-                                    "Ratings",
-                                ];
-                                const fontSizeClass = largeFontItems.includes(item)
-                                    ? "text-[18px]"
-                                    : "text-sm";
-
-                                return (
-                                    <a
-                                        key={item}
-                                        href={`/${item.toLowerCase().replace(/\s+/g, "-")}`}
-                                        className={`flex items-end justify-between w-full py-4 text-gray-700 hover:text-[#C1121F] ${fontSizeClass} ${isLast ? "border-b border-[#C5C5C5]" : ""
-                                            }`}
-                                    >
-                                        <span>{item}</span>
-                                        <ChevronRight className="w-4 h-4 text-[#22223B]" />
-                                    </a>
-                                );
-                            })}
-                        </div>
-                    </aside>
+                    {/* ✅ FILTERS */}
+                    <FiltersSidebar
+                        selectedSize={selectedSize}
+                        onSelectSize={setSelectedSize}
+                        activeCategory={activeCategory}
+                        selectedSubCategories={selectedSubCategories}
+                        onToggleSubCategory={toggleSubCategory}
+                        selectedColors={selectedColors}
+                        onToggleColor={toggleColor}
+                        price={price}
+                        onPriceChange={setPrice}
+                        selectedFits={selectedFits}
+                        onToggleFit={toggleFit}
+                        rating={rating}
+                        onRatingChange={setRating}
+                    />
 
                     {/* RIGHT COLUMN */}
                     <section>
@@ -160,9 +149,7 @@ export default function Page() {
                         />
 
                         {/* TITLE */}
-                        <h1 className="text-4xl font-bold text-[#C1121F] mb-4">
-                            New In
-                        </h1>
+                        <h1 className="text-4xl font-bold text-[#C1121F] mb-4">New In</h1>
 
                         {/* SEARCH + CATEGORIES */}
                         <div className="mb-8 flex items-center justify-between">
@@ -185,7 +172,10 @@ export default function Page() {
                                     return (
                                         <button
                                             key={cat}
-                                            onClick={() => setActiveCategory(cat)}
+                                            onClick={() => {
+                                                setActiveCategory(cat);
+                                                setSelectedSubCategories([]); // ✅ reset sub-categories when switching tab
+                                            }}
                                             className={`px-4 py-2 text-xs border rounded-lg transition ${isActive
                                                 ? "bg-[#A52A2A] border-[#A52A2A] text-white"
                                                 : "bg-[#D9D9D9] border-[#D9D9D9] text-black"
@@ -201,7 +191,9 @@ export default function Page() {
                         {/* PRODUCTS GRID */}
                         <div className="grid grid-cols-4 gap-10">
                             {loading ? (
-                                <p className="text-gray-400 text-sm col-span-4">Loading products...</p>
+                                <p className="text-gray-400 text-sm col-span-4">
+                                    Loading products...
+                                </p>
                             ) : (
                                 products.map((product) => (
                                     <ProductCard key={product.id} {...product} />

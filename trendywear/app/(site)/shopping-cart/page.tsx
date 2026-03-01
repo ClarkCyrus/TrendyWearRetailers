@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   MdAdd, 
@@ -12,6 +12,7 @@ import {
   MdCheck
 } from 'react-icons/md';
 import Breadcrumb from "@/app/(site)/components/Breadcrumb";
+import { useCart } from '../context/CartContext';
 
 export default function ShoppingCart() {
   const CURRENCY = "PHP";
@@ -23,6 +24,8 @@ export default function ShoppingCart() {
   // Options for the "Edit" functionality
   const SIZE_OPTIONS = ['S', 'M', 'L', 'XL', 'XXL'];
   const COLOR_OPTIONS = ['Yellow', 'Blue', 'Black', 'White'];
+
+  const { cartItems, setCartItems } = useCart();
 
   const [items, setItems] = useState([
     { 
@@ -50,6 +53,10 @@ export default function ShoppingCart() {
       isEditing: false
     },
   ]);
+
+  useEffect(() => {
+    setCartItems(items);
+  }, [items]);
 
   // --- DERIVED CALCULATIONS ---
   const subtotal = useMemo(() =>    
@@ -96,7 +103,7 @@ export default function ShoppingCart() {
           <Breadcrumb
             items={[
               { label: "Home", href: "/" },
-              { label: "Add to Cart" },
+              { label: "Shopping Cart" },
             ]}
           />
           <h1 className="text-4xl font-bold text-[#C1121F] mt-2">Cart</h1>

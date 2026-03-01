@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/app/(site)/components/Navbar";
 import Footer from "@/app/(site)/components/Footer";
 import { UserProvider } from "./context/UserContext";
+import { CartProvider } from "./context/CartContext";
 
 const josefinSans = Josefin_Sans({
   variable: "--font-josefin-sans",
@@ -26,9 +27,11 @@ export default function RootLayout({
         className={`${josefinSans.variable} antialiased`}
       >
         <UserProvider>
-        <Navbar />
-        {children}
-        <Footer />
+          <CartProvider>
+            <Navbar />
+              {children}
+            <Footer />
+          </CartProvider>
         </UserProvider>
       </body>
     </html>

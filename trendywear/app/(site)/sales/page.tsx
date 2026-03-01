@@ -2,19 +2,20 @@
 
 import Breadcrumb from "../components/Breadcrumb";
 import { useState, useEffect } from "react";
-import { Search, ChevronRight } from "lucide-react";
+import { Search } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { createClient } from "@/utils/supabase/client";
+import FiltersSidebar from "../components/FilterSidebar"; // ✅ add this
 
 type Product = {
-    id: number;
-    name: string;
-    images: string[];
-    oldPrice?: number;
-    price: number;
-    rating: number;
-    reviews: number;
-    colors: string[];
+  id: number;
+  name: string;
+  images: string[];
+  oldPrice?: number;
+  price: number;
+  rating: number;
+  reviews: number;
+  colors: string[];
 };
 
 const BUCKET_NAME = "images";
@@ -27,126 +28,116 @@ export default function Page() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // ✅ ADD THIS (sub-category state)
+  const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>(
+    []
+  );
+
+  // ✅ ADD THIS (toggle function)
+  const toggleSubCategory = (value: string) => {
+    setSelectedSubCategories((prev) =>
+      prev.includes(value) ? prev.filter((x) => x !== value) : [...prev, value]
+    );
+  };
+
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const toggleColor = (value: string) => {
+    setSelectedColors((prev) =>
+      prev.includes(value) ? prev.filter((x) => x !== value) : [...prev, value]
+    );
+  };
+
+  const [price, setPrice] = useState(200);
+
+  const [selectedFits, setSelectedFits] = useState<string[]>([]);
+  const toggleFit = (value: string) => {
+    setSelectedFits((prev) =>
+      prev.includes(value) ? prev.filter((x) => x !== value) : [...prev, value]
+    );
+  };
+
+  const [rating, setRating] = useState(0);
+
   const totalPages = 4;
 
   const categories = ["Polo Shirts", "Jackets", "Shirts", "Best Sellers"];
-  const filters = ["Category", "Colors", "Price Range", "Fit", "Length", "Ratings"];
 
   useEffect(() => {
-      async function fetchProducts() {
-          const supabase = createClient();
+    async function fetchProducts() {
+      const supabase = createClient();
 
-          const { data: items, error } = await supabase
-              .from("items")
-              .select("id, name, image_id");
+      const { data: items, error } = await supabase
+        .from("items")
+        .select("id, name, image_id");
 
-          if (error || !items) {
-              console.error("Error fetching items:", error);
-              setLoading(false);
-              return;
-          }
-
-          const itemIds = items.map((i) => i.id);
-          const now = new Date().toISOString();
-
-          const { data: prices } = await supabase
-              .from("prices")
-              .select("item_id, price")
-              .in("item_id", itemIds)
-              .lte("valid_from", now)
-              .or(`valid_to.is.null,valid_to.gte.${now}`)
-              .order("priority", { ascending: false });
-
-          const priceMap: Record<number, number> = {};
-          if (prices) {
-              for (const p of prices) {
-                  if (!(p.item_id in priceMap)) priceMap[p.item_id] = p.price;
-              }
-          }
-
-          const mapped = items.map((item) => {
-              const imageUrls = (item.image_id ?? []).map(
-                  (imgId: string) =>
-                      supabase.storage.from(BUCKET_NAME).getPublicUrl(imgId).data.publicUrl
-              );
-              return {
-                  id: item.id,
-                  name: item.name ?? "Unnamed",
-                  images: imageUrls.length > 0 ? imageUrls : ["/placeholder.jpg"],
-                  price: priceMap[item.id] ?? 0,
-                  rating: 0,
-                  reviews: 0,
-                  colors: [],
-              };
-          });
-
-          setProducts(mapped);
-          setLoading(false);
+      if (error || !items) {
+        console.error("Error fetching items:", error);
+        setLoading(false);
+        return;
       }
 
-      fetchProducts();
-    }, []);
+      const itemIds = items.map((i) => i.id);
+      const now = new Date().toISOString();
+
+      const { data: prices } = await supabase
+        .from("prices")
+        .select("item_id, price")
+        .in("item_id", itemIds)
+        .lte("valid_from", now)
+        .or(`valid_to.is.null,valid_to.gte.${now}`)
+        .order("priority", { ascending: false });
+
+      const priceMap: Record<number, number> = {};
+      if (prices) {
+        for (const p of prices) {
+          if (!(p.item_id in priceMap)) priceMap[p.item_id] = p.price;
+        }
+      }
+
+      const mapped = items.map((item) => {
+        const imageUrls = (item.image_id ?? []).map(
+          (imgId: string) =>
+            supabase.storage.from(BUCKET_NAME).getPublicUrl(imgId).data.publicUrl
+        );
+
+        return {
+          id: item.id,
+          name: item.name ?? "Unnamed",
+          images: imageUrls.length > 0 ? imageUrls : ["/placeholder.jpg"],
+          price: priceMap[item.id] ?? 0,
+          rating: 0,
+          reviews: 0,
+          colors: [],
+        };
+      });
+
+      setProducts(mapped);
+      setLoading(false);
+    }
+
+    fetchProducts();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F8F9FB]">
       <main className="max-w-[1440px] mx-auto px-10 py-10">
         <div className="grid grid-cols-[260px_1fr] gap-14 items-start">
-          {/* FILTERS */}
-          <aside className="mt-42">
-            <h2 className="text-[24px] font-semibold mb-8">Filters</h2>
-
-            {/* SIZE */}
-            <div className="mb-10">
-              <p className="text-[22px] font-medium mb-3">Size</p>
-              <div className="flex gap-2">
-                {["XS", "S", "M", "L", "XL"].map((size) => {
-                  const isSelected = size === selectedSize;
-                  return (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`w-9 h-9 rounded-full text-xs border flex items-center justify-center ${isSelected
-                        ? "bg-[#A52A2A] border-[#A52A2A] text-white"
-                        : "bg-[#D9D9D9] border-[#D9D9D9] text-black"
-                        }`}
-                    >
-                      {size}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* FILTER LIST */}
-            <div className="divide-y divide-[#C5C5C5] font-bold">
-              {filters.map((item, index) => {
-                const isLast = index === filters.length - 1;
-                const largeFontItems = [
-                  "Category",
-                  "Colors",
-                  "Price Range",
-                  "Fit",
-                  "Length",
-                  "Ratings",
-                ];
-                const fontSizeClass = largeFontItems.includes(item)
-                  ? "text-[18px]"
-                  : "text-sm";
-
-                return (
-                  <a
-                    key={item}
-                    href={`/${item.toLowerCase().replace(/\s+/g, "-")}`}
-                    className={`flex items-end justify-between w-full py-4 text-gray-700 hover:text-[#C1121F] ${fontSizeClass} ${isLast ? "border-b border-[#C5C5C5]" : ""
-                      }`}
-                  >
-                    <span>{item}</span>
-                    <ChevronRight className="w-4 h-4 text-[#22223B]" />
-                  </a>
-                );
-              })}
-            </div>
-          </aside>
+          {/* ✅ FILTERS (replaced old <aside>) */}
+          <FiltersSidebar
+            selectedSize={selectedSize}
+            onSelectSize={setSelectedSize}
+            activeCategory={activeCategory}
+            selectedSubCategories={selectedSubCategories}
+            onToggleSubCategory={toggleSubCategory}
+            selectedColors={selectedColors}
+            onToggleColor={toggleColor}
+            price={price}
+            onPriceChange={setPrice}
+            selectedFits={selectedFits}
+            onToggleFit={toggleFit}
+            rating={rating}
+            onRatingChange={setRating}
+          />
 
           {/* RIGHT COLUMN */}
           <section>
@@ -154,14 +145,12 @@ export default function Page() {
             <Breadcrumb
               items={[
                 { label: "Home", href: "/" },
-                { label: "Products" },
+                { label: "Sales" },
               ]}
             />
 
             {/* TITLE */}
-            <h1 className="text-4xl font-bold text-[#C1121F] mb-4">
-              All Products
-            </h1>
+            <h1 className="text-4xl font-bold text-[#C1121F] mb-4">Sales</h1>
 
             {/* SEARCH + CATEGORIES */}
             <div className="mb-8 flex items-center justify-between">
@@ -177,14 +166,17 @@ export default function Page() {
                 />
               </div>
 
-              {/* CATEGORIES */}
+              {/* CATEGORIES (tabs = main category) */}
               <div className="flex gap-2">
                 {categories.map((cat) => {
                   const isActive = cat === activeCategory;
                   return (
                     <button
                       key={cat}
-                      onClick={() => setActiveCategory(cat)}
+                      onClick={() => {
+                        setActiveCategory(cat);
+                        setSelectedSubCategories([]); // ✅ reset sub-category when changing tab
+                      }}
                       className={`px-4 py-2 text-xs border rounded-lg transition ${isActive
                         ? "bg-[#A52A2A] border-[#A52A2A] text-white"
                         : "bg-[#D9D9D9] border-[#D9D9D9] text-black"
@@ -200,11 +192,13 @@ export default function Page() {
             {/* PRODUCTS GRID */}
             <div className="grid grid-cols-4 gap-10">
               {loading ? (
-                  <p className="text-gray-400 text-sm col-span-4">Loading products...</p>
+                <p className="text-gray-400 text-sm col-span-4">
+                  Loading products...
+                </p>
               ) : (
-                  products.map((product) => (
-                      <ProductCard key={product.id} {...product} />
-                  ))
+                products.map((product) => (
+                  <ProductCard key={product.id} {...product} />
+                ))
               )}
             </div>
 

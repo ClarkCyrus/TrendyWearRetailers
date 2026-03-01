@@ -5,7 +5,17 @@ import { useState, useEffect } from "react";
 import { Search, ChevronRight } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { createClient } from "@/utils/supabase/client";
-import { fetchProducts, Product } from "../lib/fetchProducts";
+
+type Product = {
+    id: number;
+    name: string;
+    images: string[];
+    oldPrice?: number;
+    price: number;
+    rating: number;
+    reviews: number;
+    colors: string[];
+};
 
 const BUCKET_NAME = "images";
 
@@ -23,10 +33,58 @@ export default function Page() {
   const filters = ["Category", "Colors", "Price Range", "Fit", "Length", "Ratings"];
 
   useEffect(() => {
-      fetchProducts()
-      .then(setProducts)
-      .catch((err) => console.error('Error fetching products:', err))
-      .finally(() => setLoading(false));
+      async function fetchProducts() {
+          const supabase = createClient();
+
+          const { data: items, error } = await supabase
+              .from("items")
+              .select("id, name, image_id");
+
+          if (error || !items) {
+              console.error("Error fetching items:", error);
+              setLoading(false);
+              return;
+          }
+
+          const itemIds = items.map((i) => i.id);
+          const now = new Date().toISOString();
+
+          const { data: prices } = await supabase
+              .from("prices")
+              .select("item_id, price")
+              .in("item_id", itemIds)
+              .lte("valid_from", now)
+              .or(`valid_to.is.null,valid_to.gte.${now}`)
+              .order("priority", { ascending: false });
+
+          const priceMap: Record<number, number> = {};
+          if (prices) {
+              for (const p of prices) {
+                  if (!(p.item_id in priceMap)) priceMap[p.item_id] = p.price;
+              }
+          }
+
+          const mapped = items.map((item) => {
+              const imageUrls = (item.image_id ?? []).map(
+                  (imgId: string) =>
+                      supabase.storage.from(BUCKET_NAME).getPublicUrl(imgId).data.publicUrl
+              );
+              return {
+                  id: item.id,
+                  name: item.name ?? "Unnamed",
+                  images: imageUrls.length > 0 ? imageUrls : ["/placeholder.jpg"],
+                  price: priceMap[item.id] ?? 0,
+                  rating: 0,
+                  reviews: 0,
+                  colors: [],
+              };
+          });
+
+          setProducts(mapped);
+          setLoading(false);
+      }
+
+      fetchProducts();
     }, []);
 
   return (

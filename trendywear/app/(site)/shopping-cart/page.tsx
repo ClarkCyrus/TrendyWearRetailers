@@ -13,7 +13,8 @@ import {
 } from 'react-icons/md';
 import Breadcrumb from "@/app/(site)/components/Breadcrumb";
 import { fetchShoppingCart } from '../lib/fetchShoppingCart';
-import { useCart } from '../context/CartContext';
+import { useCart, CartItem } from '../context/CartContext';
+import { addToCart } from '@/app/actions/user/AddToCart';
 
 export default function ShoppingCart() {
   const CURRENCY = "PHP";
@@ -119,14 +120,14 @@ export default function ShoppingCart() {
                           {/* Stepper */}
                           <div className="flex items-center gap-5">
                             <button 
-                              onClick={() => updateQuantity(item.id, -1)} 
+                              onClick={() => {updateQuantity(item.id, -1);addToCart(item.id+1,-1);}} 
                               className="w-7 h-7 flex items-center justify-center rounded-full bg-white shadow-md text-[#C1121F] hover:bg-gray-50 transition-colors"
                             >
                               <MdRemove size={18} />
                             </button>
                             <span className="font-bold text-[#C1121F] text-lg select-none">{item.quantity}</span>
                             <button 
-                              onClick={() => updateQuantity(item.id, 1)} 
+                              onClick={() => {updateQuantity(item.id, 1);addToCart(item.id+1,1);}} 
                               className="w-7 h-7 flex items-center justify-center rounded-full bg-white shadow-md text-[#C1121F] hover:bg-gray-50 transition-colors"
                             >
                               <MdAdd size={18} />

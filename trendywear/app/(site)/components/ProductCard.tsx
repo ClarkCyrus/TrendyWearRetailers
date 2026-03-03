@@ -60,7 +60,10 @@ export default function ProductCard({
                     {/* HEART */}
                     <button
                         onClick={(e) => {
-                            liked ? removeFromWishlist(id):addToWishlist(id);
+                            liked ? 
+                            removeFromWishlist(id).then((ex)=>ex?.success ? setLiked(false):setLiked(true))
+                            :
+                            addToWishlist(id).then((ex)=>ex?.success ? setLiked(true):setLiked(false));
                             e.preventDefault();
                             setLiked(!liked);
                         }}

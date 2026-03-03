@@ -8,8 +8,10 @@ export async function addToCart(itemId: number, quantity: number = 1) {
   // Get logged in user
   const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-  if (authError || !user) throw new Error('Not authenticated')
-
+  if (authError || !user) {
+    return;
+  }
+  
   // Get or create active cart for this user
   let cartId: number
 

@@ -8,7 +8,10 @@ export async function addToWishlist(itemId: number) {
   // Get logged in user
   const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-  if (authError || !user) throw new Error('Not authenticated')
+  if (authError || !user){
+    return;
+    throw new Error('Not authenticated')
+  }
 
   // Check if already in wishlist (avoid duplicates)
   const { data: existing } = await supabase

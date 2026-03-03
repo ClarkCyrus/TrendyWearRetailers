@@ -8,9 +8,11 @@ export async function removeFromWishlist(itemId: number) {
  
   const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-  if (authError || !user) throw new Error('Not authenticated')
+  if (authError || !user){
+    return;
+    throw new Error('Not authenticated')
+  }
 
-  
   const { error } = await supabase
     .from('wishlist')
     .delete()

@@ -17,7 +17,6 @@ import {
 import { HiOutlineMenu, HiOutlineX } from 'react-icons/hi';
 import { useUser } from '../context/UserContext';
 import { createClient } from "@/utils/supabase/client";
-import { error } from 'console';
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -102,7 +101,6 @@ export default function Navbar() {
 
       if (dbError) throw new Error(dbError.message)
       
-      console.log('ADMIN: '+dbUser?.is_admin)
       return dbUser?.is_admin
     }
 

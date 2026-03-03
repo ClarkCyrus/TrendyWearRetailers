@@ -4,7 +4,6 @@ import Breadcrumb from "../components/Breadcrumb";
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import ProductCard from "../components/ProductCard";
-import { createClient } from "@/utils/supabase/client";
 import { fetchProducts, Product } from "../lib/fetchProducts";
 import FiltersSidebar from "../components/FilterSidebar";
 import { useSearchParams } from "next/navigation";
@@ -13,7 +12,7 @@ const BUCKET_NAME = "images";
 
 export default function Page() {
   const [selectedSize, setSelectedSize] = useState("XS");
-  const [activeCategory, setActiveCategory] = useState("Best Sellers");
+  const [activeCategory, setActiveCategory] = useState();
   const [searchQuery, setSearchQuery] = useState<string|null>();
   const [activePage, setActivePage] = useState(1);
   const [products, setProducts] = useState<Product[]>([]);
@@ -53,7 +52,7 @@ export default function Page() {
 
   const totalPages = 4;
 
-  const categories = ["Polo Shirts", "Jackets", "Shirts", "Best Sellers"];
+  const categories = ["Men","Women","Tops", "Bottoms", "Shirt", "Dress"];
 
   useEffect(() => {
     fetchProducts(searchParams.get('search'),searchParams.get('tags'))
@@ -61,6 +60,16 @@ export default function Page() {
       .catch((err) => console.error("Error fetching products:", err))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(()=>{
+    if (activeCategory){
+      fetchProducts(searchParams.get('search'),activeCategory)
+      .then(setProducts)
+      .catch((err) => console.error("Error fetching products:", err))
+      .finally(() => setLoading(false));
+    }
+    
+  },[activeCategory])
 
   return (
     <div className="min-h-screen bg-[#F8F9FB]">

@@ -4,36 +4,28 @@ import Breadcrumb from "../components/Breadcrumb";
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import ProductCard from "../components/ProductCard";
-import { createClient } from "@/utils/supabase/client";
-import FiltersSidebar from "../components/FilterSidebar"; // ✅ add this
-
-type Product = {
-  id: number;
-  name: string;
-  images: string[];
-  oldPrice?: number;
-  price: number;
-  rating: number;
-  reviews: number;
-  colors: string[];
-};
+import { fetchProducts, Product } from "../lib/fetchProducts";
+import FiltersSidebar from "../components/FilterSidebar";
+import { useSearchParams } from "next/navigation";
 
 const BUCKET_NAME = "images";
 
 export default function Page() {
   const [selectedSize, setSelectedSize] = useState("XS");
-  const [activeCategory, setActiveCategory] = useState("Best Sellers");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState();
+  const [searchQuery, setSearchQuery] = useState<string|null>();
   const [activePage, setActivePage] = useState(1);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ ADD THIS (sub-category state)
+  const searchParams = useSearchParams();
+  
+  // ✅ sub-category state
   const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>(
     []
   );
 
-  // ✅ ADD THIS (toggle function)
+  // ✅ toggle function
   const toggleSubCategory = (value: string) => {
     setSelectedSubCategories((prev) =>
       prev.includes(value) ? prev.filter((x) => x !== value) : [...prev, value]
@@ -60,69 +52,30 @@ export default function Page() {
 
   const totalPages = 4;
 
-  const categories = ["Polo Shirts", "Jackets", "Shirts", "Best Sellers"];
+  const categories = ["Men","Women","Tops", "Bottoms", "Shirt", "Dress"];
 
   useEffect(() => {
-    async function fetchProducts() {
-      const supabase = createClient();
-
-      const { data: items, error } = await supabase
-        .from("items")
-        .select("id, name, image_id");
-
-      if (error || !items) {
-        console.error("Error fetching items:", error);
-        setLoading(false);
-        return;
-      }
-
-      const itemIds = items.map((i) => i.id);
-      const now = new Date().toISOString();
-
-      const { data: prices } = await supabase
-        .from("prices")
-        .select("item_id, price")
-        .in("item_id", itemIds)
-        .lte("valid_from", now)
-        .or(`valid_to.is.null,valid_to.gte.${now}`)
-        .order("priority", { ascending: false });
-
-      const priceMap: Record<number, number> = {};
-      if (prices) {
-        for (const p of prices) {
-          if (!(p.item_id in priceMap)) priceMap[p.item_id] = p.price;
-        }
-      }
-
-      const mapped = items.map((item) => {
-        const imageUrls = (item.image_id ?? []).map(
-          (imgId: string) =>
-            supabase.storage.from(BUCKET_NAME).getPublicUrl(imgId).data.publicUrl
-        );
-
-        return {
-          id: item.id,
-          name: item.name ?? "Unnamed",
-          images: imageUrls.length > 0 ? imageUrls : ["/placeholder.jpg"],
-          price: priceMap[item.id] ?? 0,
-          rating: 0,
-          reviews: 0,
-          colors: [],
-        };
-      });
-
-      setProducts(mapped);
-      setLoading(false);
-    }
-
-    fetchProducts();
+    fetchProducts(searchParams.get('search'),searchParams.get('tags'))
+      .then(setProducts)
+      .catch((err) => console.error("Error fetching products:", err))
+      .finally(() => setLoading(false));
   }, []);
+
+  useEffect(()=>{
+    if (activeCategory){
+      fetchProducts(searchParams.get('search'),activeCategory)
+      .then(setProducts)
+      .catch((err) => console.error("Error fetching products:", err))
+      .finally(() => setLoading(false));
+    }
+    
+  },[activeCategory])
 
   return (
     <div className="min-h-screen bg-[#F8F9FB]">
       <main className="max-w-[1440px] mx-auto px-10 py-10">
         <div className="grid grid-cols-[260px_1fr] gap-14 items-start">
-          {/* ✅ FILTERS (replaced old <aside>) */}
+          {/* ✅ FILTERS */}
           <FiltersSidebar
             selectedSize={selectedSize}
             onSelectSize={setSelectedSize}
@@ -145,12 +98,14 @@ export default function Page() {
             <Breadcrumb
               items={[
                 { label: "Home", href: "/" },
-                { label: "Sales" },
+                { label: "Products" },
               ]}
             />
 
             {/* TITLE */}
-            <h1 className="text-4xl font-bold text-[#C1121F] mb-4">Sales</h1>
+            <h1 className="text-4xl font-bold text-[#C1121F] mb-4">
+              All Products
+            </h1>
 
             {/* SEARCH + CATEGORIES */}
             <div className="mb-8 flex items-center justify-between">
@@ -166,7 +121,7 @@ export default function Page() {
                 />
               </div>
 
-              {/* CATEGORIES (tabs = main category) */}
+              {/* CATEGORIES */}
               <div className="flex gap-2">
                 {categories.map((cat) => {
                   const isActive = cat === activeCategory;
@@ -175,7 +130,7 @@ export default function Page() {
                       key={cat}
                       onClick={() => {
                         setActiveCategory(cat);
-                        setSelectedSubCategories([]); // ✅ reset sub-category when changing tab
+                        setSelectedSubCategories([]); // ✅ reset sub-categories when switching tab
                       }}
                       className={`px-4 py-2 text-xs border rounded-lg transition ${isActive
                         ? "bg-[#A52A2A] border-[#A52A2A] text-white"

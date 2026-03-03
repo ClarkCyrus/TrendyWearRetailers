@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter} from 'next/navigation'; 
 import { useCart } from '../context/CartContext';
@@ -11,11 +11,13 @@ import {
   MdOutlineShoppingCart, 
   MdOutlinePersonOutline,
   MdLogout,
+  MdAdminPanelSettings,
   MdReceiptLong,
 } from 'react-icons/md';
 import { HiOutlineMenu, HiOutlineX } from 'react-icons/hi';
 import { useUser } from '../context/UserContext';
 import { createClient } from "@/utils/supabase/client";
+import { error } from 'console';
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -76,6 +78,11 @@ export default function Navbar() {
 
   const AccountDropdown = ({ label }: { label?: string }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [isAdmin, setIfAdmin] = useState(false);
+
+    useEffect(()=>{
+      checkIfAdmin().then(setIfAdmin)
+    },[])
 
     const handleLogout = async ()  => {
       await supabase.auth.signOut(); 
@@ -83,6 +90,21 @@ export default function Navbar() {
       alert("You have been logged out.");
       window.location.href = "/";
     };
+
+    const checkIfAdmin = async() => {
+      const user_id = (await supabase.auth.getSession()).data.session?.user.id
+
+      const { data: dbUser, error: dbError } = await supabase
+        .from('users')
+        .select('is_admin')
+        .eq('id', user_id)
+        .single()
+
+      if (dbError) throw new Error(dbError.message)
+      
+      console.log('ADMIN: '+dbUser?.is_admin)
+      return dbUser?.is_admin
+    }
 
     const buttonClass = label 
       ? "flex items-center space-x-3 p-2 hover:bg-[#003049]/10 rounded transition w-full" 
@@ -116,6 +138,15 @@ export default function Navbar() {
                 <MdLogout size={18} />
                 Logout
               </button>
+              {isAdmin&&(
+                <button 
+                onClick={()=>router.push("/admin")}
+                className="w-full flex items-center gap-2 px-5 py-2 text-sm text-red-600 transition-colors"
+              >
+                <MdAdminPanelSettings size={18} />
+                Admin
+              </button>
+              )}
             </div>
           </>
         )}

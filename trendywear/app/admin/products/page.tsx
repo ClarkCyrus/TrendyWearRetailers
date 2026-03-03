@@ -10,6 +10,9 @@ import { createItem } from "@/app/actions/admin/CreateItem";
 import { updateItem } from "@/app/actions/admin/UpdateItem";
 import { deleteItem } from "@/app/actions/admin/DeleteItem";
 import { createClient } from "@/utils/supabase/client";
+import Dropzone,{FileRejection} from "react-dropzone";
+
+const BUCKET_NAME = "images";
 
 //  Global styles ──────────────────────────────────────────────────────────────
 const GLOBAL_STYLES = `
@@ -95,6 +98,7 @@ type Product = {
   is_active: boolean;
   created_at: string;
   currentPrice?: number;
+  image_url: string;
 };
 
 type SortKey = "price" | "name" | "tags" | null;
@@ -201,7 +205,12 @@ function Field({ label, value, onChange, placeholder, textarea, type }: {
 function AddItemModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
+  const [file, setFile] = useState<PreviewFile | null>(null)
   const [form, setForm] = useState({ name: "", description: "", tags: "", image_id: "", basePrice: "" });
+
+  interface PreviewFile extends File {
+    preview: string
+  }
 
   const handleSubmit = () => {
     setError("");
@@ -212,6 +221,7 @@ function AddItemModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
         await createItem({
           name: form.name, description: form.description,
           tags: JSON.stringify(tagsArray),
+          image_file:file,
           image_id: form.image_id ? `["${form.image_id}"]` : '["placeholder"]',
           basePrice: parseFloat(form.basePrice),
         });
@@ -220,13 +230,51 @@ function AddItemModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
     });
   };
 
+  const handleDrop = (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
+    if (acceptedFiles.length === 0) return // nothing accepted
+
+    // Always take the first file
+    const f = acceptedFiles[0]
+
+    // Add preview URL
+    const previewFile = Object.assign(f, {
+      preview: URL.createObjectURL(f),
+    }) as PreviewFile
+
+    setFile(previewFile)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (file) URL.revokeObjectURL(file.preview)
+    }
+  }, [file])
+
   return (
     <ModalWrapper onClose={onClose} title="Add New Item">
       <div className="space-y-4">
         <Field label="Product Name" value={form.name} onChange={v => setForm({ ...form, name: v })} placeholder="e.g. Knitted Sweater" />
         <Field label="Description" value={form.description} onChange={v => setForm({ ...form, description: v })} placeholder="Product description..." textarea />
         <Field label="Tags (comma separated)" value={form.tags} onChange={v => setForm({ ...form, tags: v })} placeholder="e.g. Women, Tops" />
-        <Field label="Image ID" value={form.image_id} onChange={v => setForm({ ...form, image_id: v })} placeholder="" />
+        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Image</label>
+        <Dropzone onDrop={handleDrop} accept={{ "image/*": [] }} multiple={true}>
+        {({getRootProps, getInputProps}) => (
+          <section className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 bg-gray-50 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-[#C1121F] transition">
+            <div {...getRootProps()}>
+              <input {...getInputProps()} />
+              <p className="text-gray-300">{file?"Click to Replace Image":"Click to Select Image File"}</p>
+            </div>
+          </section>
+        )}
+        </Dropzone>
+        {file &&(
+          <Image 
+            src={file.preview}
+            alt={file.name}
+            width={200}
+            height={200}
+          />
+        )}
         <Field label="Base Price (₱)" value={form.basePrice} onChange={v => setForm({ ...form, basePrice: v })} placeholder="e.g. 999" type="number" />
         {error && <p className="text-red-500 text-xs font-semibold bg-red-50 px-3 py-2 rounded-lg border border-red-100">{error}</p>}
         <div className="flex justify-end gap-2 pt-2">
@@ -433,7 +481,15 @@ export default function ProductsPage() {
             .from("prices").select("price").eq("item_id", item.id)
             .or(`valid_to.is.null,valid_to.gte.${new Date().toISOString()}`)
             .order("priority", { ascending: false }).limit(1).single();
-          return { ...item, currentPrice: priceData?.price ?? null };
+          const firstImageId = item.image_id?.[0] ?? null;
+
+          const imageUrl = firstImageId
+            ? supabase.storage
+                .from(BUCKET_NAME)
+                .getPublicUrl(firstImageId).data.publicUrl
+            : "/images/placeholder.jpg";
+
+          return { ...item, currentPrice: priceData?.price ?? null, image_url:imageUrl };
         })
       );
       setProducts(withPrices);
@@ -623,7 +679,7 @@ export default function ProductsPage() {
                 />
                 <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm overflow-hidden shrink-0">
                   <Image
-                    src="https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf"
+                    src={product.image_url}
                     alt={product.name} width={40} height={40}
                     className="object-contain"
                   />

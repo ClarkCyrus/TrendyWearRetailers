@@ -2,10 +2,15 @@
 
 import { createClient } from '@/utils/supabase/server'
 
+interface PreviewFile extends File {
+  preview: string
+}
+
 export async function createItem(data: {
   name: string
   description: string
   tags: string
+  image_file: PreviewFile | null
   image_id: string
   basePrice: number
 }) {
@@ -15,6 +20,23 @@ export async function createItem(data: {
   
   console.log('AUTH USER:', user?.id)
   console.log('AUTH ERROR:', authError)
+
+  let imagePathArray = ['placeholder']
+
+  //image upload query
+  if (data.image_file) {
+    const filePath = `Uploaded/${data.name}`
+    const { data:uploadData, error:uploadError } = await supabase.storage
+      .from("images")
+      .upload(filePath, data.image_file, { contentType: data.image_file.type })
+
+    if (uploadError || !uploadData) {
+      console.error("Upload error:", uploadError)
+      throw new Error(uploadError?.message || 'Failed to upload image')
+    }
+
+    imagePathArray = [uploadData.path] 
+  }
 
   const { data: dbUser, error: dbError } = await supabase
     .from('users')
@@ -27,21 +49,19 @@ export async function createItem(data: {
 
   if (!dbUser?.is_admin) throw new Error('Unauthorized')
 
-  // 2️⃣ Insert item
   const { data: item, error: itemError } = await supabase
     .from('items')
     .insert({
       name: data.name,
       description: data.description,
       tags: JSON.parse(data.tags),
-      image_id: JSON.parse(data.image_id),
+      image_id: imagePathArray,
     })
     .select()
     .single()
 
   if (itemError || !item) throw new Error(itemError?.message || 'Failed to create item')
 
-  // 3️⃣ Insert base price
   const { error: priceError } = await supabase.from('prices').insert({
     item_id: item.id,
     price: data.basePrice,

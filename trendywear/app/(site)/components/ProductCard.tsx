@@ -35,12 +35,62 @@ export default function ProductCard({
     // fallback to placeholder if images array is empty
     const mainImage = images && images.length > 0 ? images[0] : "/placeholder.jpg";
 
+    const [topModalOpen, setTopModalOpen] = useState(false);
+    const [topModalMessage, setTopModalMessage] = useState("");
+    const [topModalTimer, setTopModalTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+
     useEffect(()=>{
         setLiked(is_liked)
     },[])
 
+    const showTopModal = (
+        message: string,
+        options?: { autoCloseMs?: number }
+        ) => {
+        setTopModalMessage(message);
+        setTopModalOpen(true);
+
+        // clear previous timer if any
+        if (topModalTimer) clearTimeout(topModalTimer);
+
+        const ms = options?.autoCloseMs ?? 3500; // default 3.5s
+        const t = setTimeout(() => {
+            setTopModalOpen(false);
+        }, ms);
+
+    setTopModalTimer(t);
+    };
+
+    const closeTopModal = () => {
+    if (topModalTimer) clearTimeout(topModalTimer);
+    setTopModalOpen(false);
+    };
+
     return (
         <div className="group">
+            {topModalOpen && (
+            <div className="fixed inset-0 z-[9999] pointer-events-none">
+                <div className="absolute top-6 left-1/2 -translate-x-1/2 w-[92%] max-w-lg pointer-events-auto">
+                <div className="rounded-xl border border-red-200 bg-white shadow-xl px-4 py-3">
+                    <div className="flex items-start gap-3">
+                    <div className="mt-1 h-2.5 w-2.5 rounded-full bg-[#C1121F]" />
+                    <div className="flex-1">
+                        <p className="text-sm font-semibold text-[#003049]">
+                        {topModalMessage}
+                        </p>
+                    </div>
+                    <button
+                        onClick={closeTopModal}
+                        className="text-gray-400 hover:text-gray-700 transition"
+                        aria-label="Close"
+                    >
+                        ✕
+                    </button>
+                    </div>
+                </div>
+                </div>
+            </div>
+            )}
             {/* IMAGE CARD */}
             <Link href={`/products/${id}`}>
                 <div
@@ -59,13 +109,27 @@ export default function ProductCard({
 
                     {/* HEART */}
                     <button
-                        onClick={(e) => {
-                            liked ? 
-                            removeFromWishlist(id).then((ex)=>ex?.success ? setLiked(false):setLiked(true))
-                            :
-                            addToWishlist(id).then((ex)=>ex?.success ? setLiked(true):setLiked(false));
+                        onClick={async (e) => {
                             e.preventDefault();
-                            setLiked(!liked);
+
+                            if (liked) {
+                            const res = await removeFromWishlist(id);
+
+                            if (res?.success) {
+                                setLiked(false);
+                            } else {
+                                showTopModal("Failed to remove from wishlist.");
+                            }
+
+                            } else {
+                            const res = await addToWishlist(id);
+
+                            if (res?.success) {
+                                setLiked(true);
+                            } else {
+                                showTopModal("Failed to add to wishlist.");
+                            }
+                            }
                         }}
                         className={`absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center transition border
               ${liked

@@ -22,7 +22,8 @@ export async function fetchProducts(search?: string | null,tags?:string |null):P
 
     let query = supabase
         .from("items")
-        .select("id, name, image_id, tags");
+        .select("id, name, image_id, tags")
+        .eq('is_active',true);
 
     if (search && search.trim() !== "") {
         query = query.ilike("name", `%${search}%`);
